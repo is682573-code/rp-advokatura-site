@@ -1,1 +1,291 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Кабинет — RP Адвокатура</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body data-page="cabinet">
+  <header class="topbar">
+    <div class="brand">
+      <strong>RP Адвокатура</strong>
+      <span id="userName" class="muted"></span>
+      <span id="userRole" class="badge"></span>
+    </div>
+    <nav class="nav">
+      <a href="index.html">Публичный поиск</a>
+      <button id="logoutBtn" class="btn small danger">Выйти</button>
+    </nav>
+  </header>
 
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="overview">Обзор</button>
+    <button class="tab-btn" data-tab="cases">Дела</button>
+    <button class="tab-btn" data-tab="orders">Ордера</button>
+    <button class="tab-btn" data-tab="photos">Фото</button>
+    <button class="tab-btn" data-tab="search">Поиск адвокатов</button>
+    <button class="tab-btn hidden" id="adminTab" data-tab="admin">Ключи / Админ</button>
+  </nav>
+
+  <main class="container">
+    <div id="cabinetMessage" class="message hidden"></div>
+
+    <section id="tab-overview" class="tab-section active">
+      <h1>Личный кабинет</h1>
+      <div id="overviewContent"></div>
+    </section>
+
+    <section id="tab-cases" class="tab-section hidden">
+      <h2>Новое дело</h2>
+
+      <form id="caseForm" class="form-grid">
+        <label>
+          Номер дела *
+          <input id="caseNumber" required placeholder="Д-2026/001" />
+        </label>
+
+        <label>
+          Название дела *
+          <input id="caseTitle" required placeholder="Защита по уголовному делу" />
+        </label>
+
+        <label>
+          Клиент
+          <input id="caseClient" placeholder="Иванов И. И." />
+        </label>
+
+        <label>
+          Ответственный адвокат
+          <select id="caseLawyer">
+            <option value="">Не назначен</option>
+          </select>
+        </label>
+
+        <label>
+          Статус
+          <select id="caseStatus">
+            <option value="open">Открыто</option>
+            <option value="in_work">В работе</option>
+            <option value="closed">Закрыто</option>
+            <option value="archived">Архив</option>
+          </select>
+        </label>
+
+        <label class="full">
+          Описание
+          <textarea id="caseDescription" rows="4"></textarea>
+        </label>
+
+        <div class="full">
+          <button type="submit" class="btn">Создать дело</button>
+        </div>
+      </form>
+
+      <h3>Список дел</h3>
+      <div id="casesList" class="results"></div>
+    </section>
+
+    <section id="tab-orders" class="tab-section hidden">
+      <h2>Новый ордер</h2>
+
+      <form id="orderForm" class="form-grid">
+        <label>
+          Номер ордера *
+          <input id="orderNumber" required placeholder="ОРД-2026/001" />
+        </label>
+
+        <label>
+          Дело
+          <select id="orderCaseSelect">
+            <option value="">Без дела</option>
+          </select>
+        </label>
+
+        <label>
+          Адвокат *
+          <select id="orderLawyerSelect">
+            <option value="">Выберите адвоката</option>
+          </select>
+        </label>
+
+        <label>
+          Тип ордера
+          <input id="orderType" placeholder="Защита по уголовному делу" />
+        </label>
+
+        <label>
+          Дата выдачи
+          <input id="orderIssuedAt" type="date" />
+        </label>
+
+        <label>
+          Статус
+          <select id="orderStatus">
+            <option value="draft">Черновик</option>
+            <option value="active">Действует</option>
+            <option value="closed">Закрыт</option>
+            <option value="cancelled">Отменён</option>
+          </select>
+        </label>
+
+        <label id="orderPublicWrap" class="hidden">
+          <input type="checkbox" id="orderIsPublic" />
+          Публичный ордер (виден в справочнике без файлов)
+        </label>
+
+        <label class="full">
+          Текст ордера
+          <textarea id="orderContent" rows="5"></textarea>
+        </label>
+
+        <label class="full">
+          Файл ордера
+          <input
+            id="orderFile"
+            type="file"
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+          />
+          <small class="muted">PDF, DOC, DOCX, JPG, PNG, WEBP. Максимум 10 МБ.</small>
+        </label>
+
+        <div class="full">
+          <button type="submit" class="btn">Создать ордер</button>
+        </div>
+      </form>
+
+      <h3>Список ордеров</h3>
+      <div id="ordersList" class="results"></div>
+    </section>
+
+    <section id="tab-photos" class="tab-section hidden">
+      <h2>Добавить фото</h2>
+
+      <form id="photoForm" class="form-grid">
+        <label>
+          Дело
+          <select id="photoCaseSelect">
+            <option value="">—</option>
+          </select>
+        </label>
+
+        <label>
+          Ордер
+          <select id="photoOrderSelect">
+            <option value="">—</option>
+          </select>
+        </label>
+
+        <label class="full">
+          Подпись
+          <input id="photoCaption" placeholder="Протокол осмотра" />
+        </label>
+
+        <label class="full">
+          Файл фото *
+          <input id="photoFile" type="file" accept="image/jpeg,image/png,image/webp" required />
+          <small class="muted">JPG, PNG, WEBP. Максимум 10 МБ.</small>
+        </label>
+
+        <div class="full">
+          <button type="submit" class="btn">Загрузить фото</button>
+        </div>
+      </form>
+
+      <h3>Фотографии</h3>
+      <div id="photosList" class="results"></div>
+    </section>
+
+    <section id="tab-search" class="tab-section hidden">
+      <h2>Поиск адвокатов и ордеров</h2>
+
+      <div class="search-box">
+        <input
+          id="cabinetQuery"
+          type="text"
+          placeholder="Рег. номер или имя адвоката"
+        />
+        <button id="cabinetSearchBtn" class="btn">Найти</button>
+      </div>
+
+      <div id="cabinetSearchMessage" class="message hidden"></div>
+      <div id="cabinetSearchResults" class="results"></div>
+
+      <section id="cabinetLawyerOrders" class="card hidden">
+        <h3 id="cabinetLawyerTitle">Ордера адвоката</h3>
+        <div id="cabinetOrdersList"></div>
+      </section>
+    </section>
+
+    <section id="tab-admin" class="tab-section hidden">
+      <h2>Выдача ключа</h2>
+
+      <form id="issueKeyForm" class="form-grid">
+        <label>
+          Роль
+          <select id="adminRole">
+            <option value="lawyer">Адвокат</option>
+            <option value="employee">Сотрудник</option>
+            <option value="admin">Администратор</option>
+          </select>
+        </label>
+
+        <label>
+          Имя *
+          <input
+            id="adminDisplayName"
+            required
+            placeholder="Пригожин Е. В."
+          />
+        </label>
+
+        <label>
+          Рег. номер адвоката
+          <input
+            id="adminRegNumber"
+            placeholder="77/12345"
+          />
+          <small class="muted">Обязательно для роли "Адвокат".</small>
+        </label>
+
+        <label>
+          Комментарий
+          <input id="adminLabel" placeholder="Личный ключ адвоката" />
+        </label>
+
+        <label>
+          Срок действия
+          <input id="adminExpiresAt" type="datetime-local" />
+          <small class="muted">Можно оставить пустым.</small>
+        </label>
+
+        <div class="full">
+          <button type="submit" class="btn">Выдать ключ</button>
+        </div>
+      </form>
+
+      <div id="adminKeyResult" class="card hidden">
+        <h3>Новый ключ</h3>
+        <p class="warning">
+          Скопируйте ключ сейчас. Он показывается только один раз.
+        </p>
+        <textarea id="adminKeyText" readonly rows="3"></textarea>
+        <button id="copyKeyBtn" class="btn small">Скопировать</button>
+      </div>
+
+      <h3>Ключи доступа</h3>
+      <div id="accessKeysList" class="results"></div>
+
+      <h3>Пользователи</h3>
+      <div id="profilesList" class="results"></div>
+
+      <h3>Логи входов</h3>
+      <div id="logsList" class="results"></div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
