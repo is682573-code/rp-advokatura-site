@@ -1,1 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Вход — RP Адвокатура</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body data-page="login">
+  <header class="topbar">
+    <div class="brand">
+      <strong>RP Адвокатура</strong>
+    </div>
+    <nav class="nav">
+      <a href="index.html">Публичный поиск</a>
+    </nav>
+  </header>
 
+  <main class="container narrow">
+    <section class="card">
+      <h1>Вход по ключу</h1>
+      <p class="muted">
+        Введи ключ доступа, который выдал администратор.
+      </p>
+
+      <form id="loginForm" class="form-stack">
+        <label>
+          Ключ доступа
+          <input
+            id="accessKey"
+            type="password"
+            required
+            autocomplete="off"
+            placeholder="Вставь ключ"
+          />
+        </label>
+
+        <button type="submit" class="btn">Войти</button>
+      </form>
+
+      <div id="loginMessage" class="message hidden"></div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
