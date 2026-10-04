@@ -1,8 +1,3 @@
--- ══════════════════════════════════════════════════════════
---  Создать первого администратора
---  Выполнять после schema.sql
--- ══════════════════════════════════════════════════════════
-
 do $$
 declare
   v_key text;
@@ -21,11 +16,8 @@ begin
     raise exception 'Администратор или админский ключ уже существует. Не запускай этот скрипт повторно без необходимости.';
   end if;
 
-  v_key :=
-    replace(gen_random_uuid()::text, '-', '') ||
-    replace(gen_random_uuid()::text, '-', '');
-
-  v_hash := encode(sha256(convert_to(v_key, 'UTF8'::name)), 'hex');
+  v_key := encode(gen_random_bytes(24), 'hex');
+  v_hash := encode(digest(v_key, 'sha256'), 'hex');
 
   insert into public.access_keys (
     key_hash,
