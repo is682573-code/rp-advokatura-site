@@ -1,8 +1,10 @@
 -- ══════════════════════════════════════════════════════════
---  RP АДВОКАТУРА — исправленная бесплатная схема
---  Без pgcrypto, без pg_trgm, без digest()
+--  RP АДВОКАТУРА — бесплатная схема для Supabase
 --  Вход по ключам, без настоящей почты
 -- ══════════════════════════════════════════════════════════
+
+create extension if not exists pgcrypto;
+create extension if not exists pg_trgm;
 
 -- ══════════════════════════════════════════════════════════
 --  1. ПРОФИЛИ ПОЛЬЗОВАТЕЛЕЙ
@@ -27,11 +29,11 @@ create unique index if not exists profiles_reg_number_unique
   on public.profiles (lower(reg_number))
   where reg_number is not null;
 
-create index if not exists profiles_display_name_idx
-  on public.profiles (display_name);
+create index if not exists profiles_display_name_trgm_idx
+  on public.profiles using gin (display_name gin_trgm_ops);
 
-create index if not exists profiles_reg_number_idx
-  on public.profiles (reg_number);
+create index if not exists profiles_reg_number_trgm_idx
+  on public.profiles using gin (reg_number gin_trgm_ops);
 
 -- ══════════════════════════════════════════════════════════
 --  2. КЛЮЧИ ДОСТУПА
@@ -198,7 +200,6 @@ language sql
 stable
 security definer
 set search_path = public, pg_temp
-set row_security = off
 as $$
   select exists (
     select 1
@@ -215,7 +216,6 @@ language sql
 stable
 security definer
 set search_path = public, pg_temp
-set row_security = off
 as $$
   select exists (
     select 1
@@ -232,7 +232,6 @@ language sql
 stable
 security definer
 set search_path = public, pg_temp
-set row_security = off
 as $$
   select exists (
     select 1
@@ -242,13 +241,6 @@ as $$
       and is_active = true
   );
 $$;
-
-grant execute on function public.normalize_name(text) to anon, authenticated;
-grant execute on function public.is_valid_display_name(text) to anon, authenticated;
-grant execute on function public.is_valid_reg_number(text) to anon, authenticated;
-grant execute on function public.is_admin() to anon, authenticated;
-grant execute on function public.is_staff() to anon, authenticated;
-grant execute on function public.is_office() to anon, authenticated;
 
 -- ══════════════════════════════════════════════════════════
 --  RLS
@@ -264,7 +256,7 @@ alter table public.photos        enable row level security;
 -- ──────────────────────────────────────────────────────────
 -- Профили
 -- Публично видны только активные адвокаты.
--- Свой профиль видит владелец.
+-- Сво профиль видит владелец.
 -- Админ видит всех.
 -- ──────────────────────────────────────────────────────────
 
@@ -475,48 +467,36 @@ using (
 --  orders private, photos private
 -- ══════════════════════════════════════════════════════════
 
-do $$
-begin
-  insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-  values (
-    'orders',
-    'orders',
-    false,
-    10485760,
-    array[
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'image/jpeg',
-      'image/png',
-      'image/webp'
-    ]::text[]
-  )
-  on conflict (id) do update set
-    public = excluded.public,
-    file_size_limit = excluded.file_size_limit,
-    allowed_mime_types = excluded.allowed_mime_types;
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'orders',
+  'orders',
+  false,
+  10485760,
+  array[
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'image/jpeg',
+    'image/png',
+    'image/webp'
+  ]::text[]
+)
+on conflict (id) do nothing;
 
-  insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-  values (
-    'photos',
-    'photos',
-    false,
-    10485760,
-    array[
-      'image/jpeg',
-      'image/png',
-      'image/webp'
-    ]::text[]
-  )
-  on conflict (id) do update set
-    public = excluded.public,
-    file_size_limit = excluded.file_size_limit,
-    allowed_mime_types = excluded.allowed_mime_types;
-
-exception when others then
-  raise notice 'Не удалось автоматически создать/обновить buckets. Создайте вручную в Supabase Storage: orders и photos, private, max 10MB.';
-end $$;
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'photos',
+  'photos',
+  false,
+  10485760,
+  array[
+    'image/jpeg',
+    'image/png',
+    'image/webp'
+  ]::text[]
+)
+on conflict (id) do nothing;
 
 -- ══════════════════════════════════════════════════════════
 --  STORAGE POLICIES
@@ -556,7 +536,7 @@ using (
 );
 
 -- ══════════════════════════════════════════════════════════
---  ХЕШИРОВАНИЕ КЛЮЧА БЕЗ pgcrypto
+--  ХЕШИРОВАНИЕ КЛЮЧА
 -- ══════════════════════════════════════════════════════════
 
 create or replace function public.hash_access_key(p_key text)
@@ -565,30 +545,13 @@ language sql
 immutable
 set search_path = public, pg_temp
 as $$
-  select encode(sha256(convert_to(p_key, 'UTF8'::name)), 'hex');
+  select encode(digest(p_key, 'sha256'), 'hex');
 $$;
-
-grant execute on function public.hash_access_key(text) to anon, authenticated;
-
--- ══════════════════════════════════════════════════════════
---  ГЕНЕРАЦИЯ КЛЮЧА БЕЗ gen_random_bytes
--- ══════════════════════════════════════════════════════════
-
-create or replace function public.generate_access_key()
-returns text
-language sql
-volatile
-set search_path = public, pg_temp
-as $$
-  select
-    replace(gen_random_uuid()::text, '-', '') ||
-    replace(gen_random_uuid()::text, '-', '');
-$$;
-
-grant execute on function public.generate_access_key() to authenticated;
 
 -- ══════════════════════════════════════════════════════════
 --  ПРОВЕРКА НОВОГО КЛЮЧА ПЕРЕД СОЗДАНИЕМ AUTH-ПОЛЬЗОВАТЕЛЯ
+--  Нужна, чтобы не создавать мусорных auth-пользователей
+--  по неверным ключам.
 -- ══════════════════════════════════════════════════════════
 
 create or replace function public.validate_new_access_key(p_key text)
@@ -597,7 +560,6 @@ language plpgsql
 stable
 security definer
 set search_path = public, pg_temp
-set row_security = off
 as $$
 declare
   v_hash text;
@@ -643,7 +605,6 @@ returns json
 language plpgsql
 security definer
 set search_path = public, pg_temp
-set row_security = off
 as $$
 declare
   v_key text;
@@ -712,7 +673,7 @@ begin
     v_reg := null;
   end if;
 
-  v_key := public.generate_access_key();
+  v_key := encode(gen_random_bytes(24), 'hex');
   v_hash := public.hash_access_key(v_key);
 
   while exists (
@@ -720,7 +681,7 @@ begin
     from public.access_keys
     where key_hash = v_hash
   ) loop
-    v_key := public.generate_access_key();
+    v_key := encode(gen_random_bytes(24), 'hex');
     v_hash := public.hash_access_key(v_key);
   end loop;
 
@@ -768,7 +729,6 @@ returns json
 language plpgsql
 security definer
 set search_path = public, pg_temp
-set row_security = off
 as $$
 declare
   v_uid uuid;
@@ -817,11 +777,12 @@ begin
       );
     end if;
 
-    update public.access_keys
-    set
-      last_used_by = v_uid,
-      last_used_at = now()
-    where id = v_key_rec.id;
+    if v_key_rec.last_used_by is null then
+      update public.access_keys
+      set last_used_by = v_uid,
+          last_used_at = now()
+      where id = v_key_rec.id;
+    end if;
 
     insert into public.login_logs (
       user_id,
@@ -929,7 +890,6 @@ language plpgsql
 stable
 security definer
 set search_path = public, pg_temp
-set row_security = off
 as $$
 declare
   v_q text;
@@ -976,8 +936,8 @@ to anon, authenticated;
 
 -- ══════════════════════════════════════════════════════════
 --  ПОЛУЧЕНИЕ ОРДЕРОВ АДВОКАТА
---  Анониму и чужому адвокату показывает только публичные ордера.
---  Office/admin и самому адвокату показывает полные данные.
+--  Анониму показывает только публичные ордера без file_path.
+--  Staff показывает рабочие данные.
 -- ══════════════════════════════════════════════════════════
 
 create or replace function public.get_lawyer_orders(
@@ -1002,14 +962,15 @@ language plpgsql
 stable
 security definer
 set search_path = public, pg_temp
-set row_security = off
 as $$
 declare
   v_uid uuid;
+  v_staff boolean;
   v_office boolean;
   v_limit int;
 begin
   v_uid := auth.uid();
+  v_staff := public.is_staff();
   v_office := public.is_office();
   v_limit := coalesce(p_limit, 100);
 
@@ -1021,8 +982,8 @@ begin
     v_limit := 500;
   end if;
 
-  -- Если это не office и не свой адвокат, показываем только публичные ордера.
-  if not v_office and (v_uid is null or p_lawyer_id <> v_uid) then
+  -- Если пользователь не авторизован, показываем только публичные метаданные.
+  if not v_staff then
     return query
     select
       o.id,
@@ -1046,7 +1007,12 @@ begin
     return;
   end if;
 
-  -- Office/admin или адвокат смотрит свои ордера — полные данные.
+  -- Адвокат может смотреть только свои ордера.
+  -- Employee/admin могут смотреть ордера любого адвоката.
+  if not v_office and (v_uid is null or p_lawyer_id <> v_uid) then
+    return;
+  end if;
+
   return query
   select
     o.id,
