@@ -1,1 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RP Адвокатура — справочник адвокатов</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body data-page="public">
+  <header class="topbar">
+    <div class="brand">
+      <strong>RP Адвокатура</strong>
+      <span class="muted">публичный справочник</span>
+    </div>
+    <nav class="nav">
+      <a href="index.html" class="active">Поиск адвокатов</a>
+      <a href="login.html" id="publicAuthLink">Войти</a>
+    </nav>
+  </header>
 
+  <main class="container">
+    <section class="hero">
+      <h1>Поиск адвокатов по регистрационному номеру</h1>
+      <p class="muted">
+        Например: <code>77/12345</code> или <code>Пригожин Е. В.</code>
+      </p>
+    </section>
+
+    <section class="search-box">
+      <input
+        id="publicQuery"
+        type="text"
+        placeholder="Введите рег. номер или имя адвоката"
+      />
+      <button id="publicSearchBtn" class="btn">Найти</button>
+    </section>
+
+    <div id="publicMessage" class="message hidden"></div>
+
+    <section id="publicResults" class="results"></section>
+
+    <section id="publicLawyerOrders" class="card hidden">
+      <h2 id="publicLawyerTitle">Ордера адвоката</h2>
+      <div id="publicOrdersList"></div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
